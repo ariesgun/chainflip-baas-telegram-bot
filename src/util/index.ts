@@ -38,13 +38,21 @@ export const buildInlineAssetsList = (assets) => {
     }
   });
 
+  if (list_assets.length > 0) {
+    inline_keyboard.push(list_assets);
+  }
+
   return inline_keyboard;
 };
 
 export const askQuote = async (ctx) => {
+  console.log("Quote ", Number(ctx.session.amount));
+  const amount =
+    Math.pow(10, ctx.session.source.decimals) * Number(ctx.session.amount);
+  console.log(ctx.session.source.decimals);
   try {
     const res = await fetch(
-      `${chainflipBaseUrl}/quote-native?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${ctx.session.destination.id}&amount=10000000000000000`
+      `${chainflipBaseUrl}/quote-native?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${ctx.session.destination.id}&amount=${amount}`
     );
     const data = await res.json();
     console.log(data);

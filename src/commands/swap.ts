@@ -7,7 +7,7 @@ const swap = () => async (ctx: Context) => {
   const assets = await getAssets();
   let inline_keyboard = buildInlineAssetsList(assets);
 
-  //   ctx["session"].state = 0;
+  ctx["session"].state = 0;
 
   await ctx.telegram.sendMessage(
     ctx.message?.chat.id!,

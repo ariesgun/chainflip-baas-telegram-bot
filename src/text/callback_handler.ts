@@ -19,6 +19,7 @@ const callback_handler = () => async (ctx: Context) => {
   console.log(callback_query.message);
 
   if (state === 0) {
+    // Base token
     const asset = await getAsset(callback_query.data);
     session.source = asset;
   } else if (state === 1) {
@@ -39,6 +40,8 @@ const callback_handler = () => async (ctx: Context) => {
     if (callback_query.data === "complete") {
       session.state = 5;
     }
+  } else if (state == 10) {
+    // amount
   }
 
   state = session.state;
@@ -58,7 +61,7 @@ const callback_handler = () => async (ctx: Context) => {
     );
     session.state = 0;
   } else if (state == 0) {
-    reply = `OK. You have chosen *${session.source.ticker} (${session.source.network})* to swap from.\nNow please choose the asset to swap to.`;
+    reply = `OK. You have chosen *${session.source.ticker} (${session.source.network})* to swap from.\nThe minimum amount is *${session.source.minimalAmount} ${session.source.ticker}*.\n\nWhat is the amount you would like to swap?`;
 
     const assets = await getAssets();
     inline_keyboard = buildInlineAssetsList(assets);
@@ -68,7 +71,7 @@ const callback_handler = () => async (ctx: Context) => {
         callback_data: "back",
       },
     ]);
-    session.state = 1;
+    session.state = 10;
 
     await ctx.telegram.editMessageText(
       callback_query.message.chat.id,
@@ -76,7 +79,6 @@ const callback_handler = () => async (ctx: Context) => {
       undefined,
       reply,
       {
-        reply_markup: { inline_keyboard },
         parse_mode: "Markdown",
       }
     );

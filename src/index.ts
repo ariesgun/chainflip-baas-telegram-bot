@@ -1,7 +1,8 @@
-import { session, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
+import { session } from "telegraf-session-mongodb";
 
 import { about, assets, status, swap } from "./commands";
-import { callback_handler, greeting } from "./text";
+import { callback_handler, greeting, text_handler } from "./text";
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { development, production } from "./core";
 import { MongoClient } from "mongodb";
@@ -19,8 +20,6 @@ const initialize = async () => {
     })
   ).db();
 
-  console.log("DB ", db, process.env.MONGODB_URI);
-
   bot.use(session(db));
 
   bot.command("about", about());
@@ -29,17 +28,19 @@ const initialize = async () => {
   bot.command("swap", swap());
 
   bot.on("callback_query", callback_handler());
-  bot.on("message", greeting());
+  bot.on("message", text_handler());
 
   //dev mode
   ENVIRONMENT !== "production" && development(bot);
+
+  return bot;
 };
 
 initialize();
 
 //prod mode (Vercel)
 export const startVercel = async (req: VercelRequest, res: VercelResponse) => {
-  const bot = new Telegraf(BOT_TOKEN);
+  const bot = await initialize();
 
   await production(req, res, bot);
 };
