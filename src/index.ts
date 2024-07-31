@@ -1,7 +1,7 @@
 import { Telegraf } from "telegraf";
 import { session } from "telegraf-session-mongodb";
 
-import { about, assets, status, swap } from "./commands";
+import { about, assets, status, swap, history } from "./commands";
 import { callback_handler, greeting, text_handler } from "./text";
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { development, production } from "./core";
@@ -26,6 +26,7 @@ const initialize = async () => {
   bot.command("status", status());
   bot.command("assets", assets());
   bot.command("swap", swap());
+  bot.command("history", history());
 
   bot.on("callback_query", callback_handler());
   bot.on("message", text_handler());

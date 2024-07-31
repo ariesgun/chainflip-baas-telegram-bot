@@ -4,6 +4,7 @@ import { assetsInfo } from "./assets_lut";
 const chainflipBaseUrl = process.env.CHAINFLIP_BASEURL;
 const thornodeBaseUrl = process.env.THORNODE_BASEURL;
 const mayanodeBaseUrl = process.env.MAYANODE_BASEURL;
+const cfreceiver_address = process.env.CFRECEIVER_ADDRESS;
 const apiKey = process.env.CHAINFLIP_KEY;
 
 export const getAssets = async () => {
@@ -192,9 +193,10 @@ const askChainflipQuote = async (ctx) => {
 
 const askThorchainQuote = async (ctx) => {
   const amount = Math.pow(10, 8) * Number(ctx.session.amount);
+  const baseAsset = "ETH.ETH";
   try {
     const res = await fetch(
-      `${thornodeBaseUrl}/quote/swap?from_asset=${ctx.session.source.id}&to_asset=${ctx.session.destination.id}&amount=${amount}`
+      `${thornodeBaseUrl}/quote/swap?from_asset=${baseAsset}&to_asset=${ctx.session.destination.id}&amount=${amount}`
     );
     const data = await res.json();
     console.log("Thornode", data);
@@ -215,9 +217,10 @@ const askThorchainQuote = async (ctx) => {
 
 const askMayanodeQuote = async (ctx) => {
   const amount = Math.pow(10, 8) * Number(ctx.session.amount);
+  const baseAsset = "ETH.ETH";
   try {
     const res = await fetch(
-      `${mayanodeBaseUrl}/quote/swap?from_asset=${ctx.session.source.id}&to_asset=${ctx.session.destination.id}&amount=${amount}`
+      `${mayanodeBaseUrl}/quote/swap?from_asset=${baseAsset}&to_asset=${ctx.session.destination.id}&amount=${amount}`
     );
     const data = await res.json();
     console.log("Mayanode", data);
@@ -238,9 +241,10 @@ const askMayanodeQuote = async (ctx) => {
 
 export const getThorchainMemo = async (ctx) => {
   const amount = Math.pow(10, 8) * Number(ctx.session.amount);
+  const baseAsset = "ETH.ETH";
   try {
     const res = await fetch(
-      `${thornodeBaseUrl}/quote/swap?from_asset=${ctx.session.source.id}&to_asset=${ctx.session.destination.id}&amount=${amount}&destination=${ctx.session.destinationAddress}`
+      `${thornodeBaseUrl}/quote/swap?from_asset=${baseAsset}&to_asset=${ctx.session.destination.id}&amount=${amount}&destination=${ctx.session.destinationAddress}`
     );
     const data = await res.json();
     console.log("Thornode", data);
@@ -253,9 +257,10 @@ export const getThorchainMemo = async (ctx) => {
 
 export const getMayanodeMemo = async (ctx) => {
   const amount = Math.pow(10, 8) * Number(ctx.session.amount);
+  const baseAsset = "ETH.ETH";
   try {
     const res = await fetch(
-      `${mayanodeBaseUrl}/quote/swap?from_asset=${ctx.session.source.id}&to_asset=${ctx.session.destination.id}&amount=${amount}&destination=${ctx.session.destinationAddress}`
+      `${mayanodeBaseUrl}/quote/swap?from_asset=${baseAsset}&to_asset=${ctx.session.destination.id}&amount=${amount}&destination=${ctx.session.destinationAddress}`
     );
     const data = await res.json();
     console.log("Mayanode", data);
@@ -282,8 +287,9 @@ export const startSwap = async (ctx) => {
 
 export const startAdvancedSwap = async (ctx, payload) => {
   try {
-    const contractAddress = "0x631652b5B115d9298c763131A9046939301fbA03";
-    const assetDestination = "eth.arb";
+    const contractAddress = cfreceiver_address;
+    console.log("Address", contractAddress);
+    const assetDestination = "eth.eth";
 
     const web3 = new Web3(Web3.givenProvider);
     const inbound_address = payload.inbound_address;
@@ -293,8 +299,10 @@ export const startAdvancedSwap = async (ctx, payload) => {
       ["string", "string"],
       [inbound_address, memo]
     );
-    console.log("Encoded Memo ", encodedMemo);
-
+    console.log(
+      "URL ",
+      `${chainflipBaseUrl}/swap?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${assetDestination}&destinationAddress=${contractAddress}`
+    );
     const res = await fetch(
       `${chainflipBaseUrl}/swap?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${assetDestination}&destinationAddress=${contractAddress}`,
       {
@@ -305,7 +313,7 @@ export const startAdvancedSwap = async (ctx, payload) => {
         },
         body: JSON.stringify({
           ccmPayload: {
-            gas_budget: "100000000000000",
+            gas_budget: "1000000000000",
             message: encodedMemo,
           },
         }),
@@ -334,6 +342,19 @@ export const getStatus = async (ctx) => {
     return data;
   } catch (err) {
     console.log(err.message);
+    throw err;
+  }
+};
+
+export const getStatusById = async (swapId) => {
+  try {
+    const res = await fetch(
+      `${chainflipBaseUrl}/status-by-id/?apikey=${apiKey}&swapId=${swapId}`
+    );
+    const data = await res.json();
+
+    return data;
+  } catch (err) {
     throw err;
   }
 };
