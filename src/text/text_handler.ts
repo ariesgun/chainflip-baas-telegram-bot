@@ -1,5 +1,10 @@
 import { Context } from "telegraf";
-import { buildInlineAssetsList, getAssets, startSwap } from "../util";
+import {
+  buildInlineAssetsList,
+  getAssets,
+  startAdvancedSwap,
+  startSwap,
+} from "../util";
 
 const text_handler = () => async (ctx: Context) => {
   console.log("text_handler", ctx);
@@ -37,7 +42,8 @@ const text_handler = () => async (ctx: Context) => {
       }
     );
 
-    const res = await startSwap(ctx);
+    // const res = await startSwap(ctx);
+    const res = await startAdvancedSwap(ctx);
 
     if (res.status && res.status != 200) {
       const reply = `Something is wrong.\nDetail*: ${res.detail}*`;

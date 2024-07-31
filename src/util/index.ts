@@ -1,4 +1,5 @@
 const chainflipBaseUrl = process.env.CHAINFLIP_BASEURL;
+const thornodeBaseUrl = process.env.THORNODE_BASEURL;
 const apiKey = process.env.CHAINFLIP_KEY;
 
 export const getAssets = async () => {
@@ -47,15 +48,39 @@ export const buildInlineAssetsList = (assets) => {
 
 export const askQuote = async (ctx) => {
   console.log("Quote ", Number(ctx.session.amount));
+  if (ctx.session.broker === "chainflip") {
+    await askChainflipQuote(ctx);
+  } else if (ctx.session.broker === "thornode") {
+    await askThorchainQuote(ctx);
+  } else {
+    console.log("Unknown broker");
+  }
+};
+
+const askChainflipQuote = async (ctx) => {
   const amount =
     Math.pow(10, ctx.session.source.decimals) * Number(ctx.session.amount);
-  console.log(ctx.session.source.decimals);
   try {
     const res = await fetch(
       `${chainflipBaseUrl}/quote-native?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${ctx.session.destination.id}&amount=${amount}`
     );
     const data = await res.json();
-    console.log(data);
+    console.log("Chainflip", data);
+    return data;
+  } catch (err) {
+    console.log(err.message);
+  }
+};
+
+const askThorchainQuote = async (ctx) => {
+  const amount =
+    Math.pow(10, ctx.session.source.decimals) * Number(ctx.session.amount);
+  try {
+    const res = await fetch(
+      `${thornodeBaseUrl}/quote/swap?from_asset=${ctx.session.source.id}&to_asset=${ctx.session.destination.id}&amount=${amount}&destination=${ctx.session.destinationAddress}`
+    );
+    const data = await res.json();
+    console.log("Thornode", data);
     return data;
   } catch (err) {
     console.log(err.message);
@@ -66,6 +91,32 @@ export const startSwap = async (ctx) => {
   try {
     const res = await fetch(
       `${chainflipBaseUrl}/swap?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${ctx.session.destination.id}&destinationAddress=${ctx.session.destinationAddress}`
+    );
+    let data = await res.json();
+    console.log(data);
+    return data;
+  } catch (err) {
+    console.log(err.message);
+  }
+};
+
+export const startAdvancedSwap = async (ctx) => {
+  try {
+    const res = await fetch(
+      `${chainflipBaseUrl}/swap?apikey=${apiKey}&sourceAsset=${ctx.session.source.id}&destinationAsset=${ctx.session.destination.id}&destinationAddress=${ctx.session.destinationAddress}`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ccmPayload: {
+            gas_budget: "10000000000000",
+            message: "0xdeadc0de",
+          },
+        }),
+      }
     );
     let data = await res.json();
     console.log(data);
