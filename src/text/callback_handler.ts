@@ -4,6 +4,7 @@ import {
   buildInlineAssetsList,
   getAsset,
   getAssets,
+  getDestinationAsset,
   getStatus,
 } from "../util";
 import moment = require("moment");
@@ -27,7 +28,7 @@ const callback_handler = () => async (ctx: Context) => {
       session.state = -1;
     } else {
       // Destination
-      const asset = await getAsset(callback_query.data);
+      const asset = await getDestinationAsset(callback_query.data);
       session.destination = asset;
     }
   } else if (state === 2) {
@@ -86,8 +87,6 @@ const callback_handler = () => async (ctx: Context) => {
     reply = `OK. Please wait for the quote ⌛...`;
     inline_keyboard = [];
     const quote = await askQuote(ctx);
-
-    console.log("Quote", quote);
     session.quote = quote;
 
     await ctx.telegram.editMessageText(
@@ -97,7 +96,17 @@ const callback_handler = () => async (ctx: Context) => {
       reply
     );
 
-    reply = `You've chosen to swap from *${session.source.ticker} (${session.source.network})* to *${session.destination.ticker} (${session.destination.network})*.\n\n`;
+    let swapRoute = "Chainflip API";
+    if (session.ccm) {
+      if (session.destination.broker === "thornode") {
+        swapRoute += " + CCM + Thornode";
+      } else if (session.destination.broker === "mayanode") {
+        swapRoute += " + CCM + Mayanode";
+      }
+    }
+
+    reply = `You've chosen to swap from *${session.source.ticker} (${session.source.network})* to *${session.destination.ticker} (${session.destination.network})*.\n`;
+    reply += `This swap is using *${swapRoute}*.\n\n`;
     reply += `Quote\n\t *${quote.ingressAmount} ${quote.ingressAsset}* ➡️ *${quote.egressAmount} ${quote.egressAsset}*\n\n`;
     reply += `Estimated Duration: ${quote.estimatedDurationSeconds} seconds.`;
 

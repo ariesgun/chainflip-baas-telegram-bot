@@ -175,7 +175,7 @@ const setup = (db) => {
         ctx.session.state = -1;
       } else {
         // Destination
-        const asset = await getAsset(callback_query.data);
+        const asset = await getDestinationAsset(callback_query.data);
         ctx.session.destination = asset;
       }
     } else if (state === 2) {

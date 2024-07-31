@@ -2,6 +2,9 @@ import { Context } from "telegraf";
 import {
   buildInlineAssetsList,
   getAssets,
+  getDestinationAssets,
+  getMayanodeMemo,
+  getThorchainMemo,
   startAdvancedSwap,
   startSwap,
 } from "../util";
@@ -14,9 +17,9 @@ const text_handler = () => async (ctx: Context) => {
   if (state == 10) {
     session.amount = ctx.message["text"];
 
-    const reply = `OK. You have chosen to swap *${session.amount} ${session.source.ticker} (${session.source.network})*.\Which asset would you like to swap to?`;
+    const reply = `OK. You have chosen to swap *${session.amount} ${session.source.ticker} (${session.source.network})*.\nWhich asset would you like to swap to?`;
 
-    const assets = await getAssets();
+    const assets = await getDestinationAssets();
     const filteredAssets = assets.filter((el) => el.id !== session.source.id);
     let inline_keyboard = buildInlineAssetsList(filteredAssets);
     inline_keyboard.push([
@@ -42,18 +45,30 @@ const text_handler = () => async (ctx: Context) => {
       }
     );
 
-    // const res = await startSwap(ctx);
-    const res = await startAdvancedSwap(ctx);
+    try {
+      let res;
+      if (session.ccm) {
+        let memo = "";
+        if (session.destination.broker === "thornode") {
+          memo = await getThorchainMemo(ctx);
+        } else if (session.destination.broker === "mayanode") {
+          memo = await getMayanodeMemo(ctx);
+        }
 
-    if (res.status && res.status != 200) {
-      const reply = `Something is wrong.\nDetail*: ${res.detail}*`;
-      await ctx.telegram.sendMessage(ctx.message.chat.id, reply, {
-        parse_mode: "Markdown",
-      });
-      session.state = -1;
-    } else {
-      const quote = session.quote;
-      const reply = `
+        res = await startAdvancedSwap(ctx, memo);
+      } else {
+        res = await startSwap(ctx);
+      }
+
+      if (res.status && res.status != 200) {
+        const reply = `Something is wrong.\nDetail*: ${res.detail}*`;
+        await ctx.telegram.sendMessage(ctx.message.chat.id, reply, {
+          parse_mode: "Markdown",
+        });
+        session.state = -1;
+      } else {
+        const quote = session.quote;
+        const reply = `
       
       ⚠️⚠️ Swap Information ⚠️⚠️
 
@@ -69,27 +84,33 @@ Please transfer *${session.source.ticker}* to the following address on *${sessio
 ‼️ Explorer URL: [link](${res.explorerUrl})
       `;
 
-      let inline_keyboard = [
-        [
-          {
-            text: "Done ✅",
-            callback_data: "complete",
-          },
-        ],
-      ];
+        let inline_keyboard = [
+          [
+            {
+              text: "Done ✅",
+              callback_data: "complete",
+            },
+          ],
+        ];
 
+        await ctx.telegram.sendMessage(ctx.message.chat.id, reply, {
+          reply_markup: { inline_keyboard },
+          parse_mode: "Markdown",
+        });
+
+        session.swapId = res.id;
+        if (session.history) {
+          session.history.push(res.id);
+        } else {
+          session.history = [res.id];
+        }
+        session.state = 4;
+      }
+    } catch (err) {
+      const reply = `Something is wrong. Please try again.\n*Error*: ${err.message}`;
       await ctx.telegram.sendMessage(ctx.message.chat.id, reply, {
-        reply_markup: { inline_keyboard },
         parse_mode: "Markdown",
       });
-
-      session.swapId = res.id;
-      if (session.history) {
-        session.history.push(res.id);
-      } else {
-        session.history = [res.id];
-      }
-      session.state = 4;
     }
   } else {
     const reply = `Hello ${ctx.from.first_name}`;
