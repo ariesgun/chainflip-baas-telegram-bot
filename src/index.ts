@@ -1,4 +1,4 @@
-import { Telegraf } from "telegraf";
+import { Context, Telegraf } from "telegraf";
 import { session } from "telegraf-session-mongodb";
 
 import { about, assets, status, swap, history } from "./commands";
@@ -10,7 +10,11 @@ import { MongoClient } from "mongodb";
 const BOT_TOKEN = process.env.BOT_TOKEN || "";
 const ENVIRONMENT = process.env.NODE_ENV || "";
 
-const bot = new Telegraf(BOT_TOKEN);
+export interface SessionContext extends Context {
+  session: any;
+}
+
+const bot = new Telegraf<SessionContext>(BOT_TOKEN);
 
 const initialize = async () => {
   const db = (
